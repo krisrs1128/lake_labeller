@@ -10,3 +10,6 @@ conda install -c conda-forge dash-bootstrap-components
 conda install -c conda-forge dash-html-components
 conda install -c conda-forge dash-extensions
 conda install -c conda-forge titiler-core
+conda install -c conda-forge rio-cogeo
+conda install -c conda-forge fastapi
+conda install -c conda-forge uvicorn

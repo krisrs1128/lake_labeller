@@ -30,17 +30,15 @@ SIDEBAR_STYLE = {
 }
 
 map = dl.Map(
-    children=[
-        dl.TileLayer(),
-        dl.GeoJSON(
-            data=labels[:10].to_json(),
-            id="labels",
-            hoverStyle=arrow_function(dict(weight=5, color='#666', dashArray=''))
-        )],
+children=[
+    dl.TileLayer(
+        url="http://127.0.0.1:8000/cog/tiles/{z}/{x}/{y}.png?scale=1&format=png&TileMatrixSetId=WebMercatorQuad&url=..%2Fdata%2Fderived_data%2Fcogs%2Flakes.vrt&resampling_method=nearest&return_mask=true"
+    ),
+    dl.GeoJSON( data=labels[:10].to_json(), id="labels", hoverStyle=arrow_function(dict(weight=5, color='#666', dashArray='')))],
     style={'width': '100%', 'height': '50vh', 'margin': "auto", "display": "block"},
     id="map",
-    center=(28.887046, 86.513408),
-    zoom=9
+    center=(30.3680988015709, 81.2868118286133),
+    zoom=8
 )
 
 # define the overall layout
@@ -52,12 +50,15 @@ app.layout = html.Div(
             [
                 dbc.Row("This is the lake labelling app."),
                 *dropdowns,
-                map
             ],
+            style=SIDEBAR_STYLE,
             fluid=True,
         ),
+        dbc.Container(
+            [map],
+            fluid=True
+        )
     ],
-    style=SIDEBAR_STYLE,
 )
 
 

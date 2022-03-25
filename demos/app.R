@@ -1,16 +1,13 @@
 library(leaflet)
-library(tidyverse)
-library(leaflet.extras)
-library(shiny)
-library(geojsonsf)
-library(sf)
-library(glue)
 library(leafpm)
-library(mapedit)
-library(mapview)
+library(leaflet.extras)
 library(rmapshaper)
+library(sf)
+library(tidyverse)
+library(glue)
+library(shiny)
 
-titiler_url <- "http://127.0.0.1:8000/cog/tiles/{{z}}/{{x}}/{{y}}.png?scale=1&format=png&TileMatrixSetId=WebMercatorQuad&url=..%2Fdata%2Fderived_data%2Fcogs%2Flakes.vrt&&bidx={input$ch1}%2C{input$ch2}%2C{input$ch3}&resampling_method=nearest&return_mask=true"
+titiler_url <- "http://127.0.0.1:8000/cog/tiles/{{z}}/{{x}}/{{y}}.png?scale=1&format=png&TileMatrixSetId=WebMercatorQuad&url=..%2Fdata%2Fderived_data%2Fcogs%2Flakes.vrt&&bidx={input$ch1}%2C{input$ch2}%2C{input$ch3}&return_mask=true"
 lakes <- read_sf("../data/GL_3basins_2015.shp") %>%
   as("Spatial") %>%
   ms_simplify(keep=0.05) %>%
@@ -26,11 +23,12 @@ ui <- fluidPage(
   leafletOutput("map")
 )
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   current_map <- reactive({
     lake <- lakes %>%
       filter(GL_ID == input$gl_id)
     
+    print(glue(titiler_url))
     leaflet() %>%
       addBingTiles(api = "AiQHbzGt0thQclG_ntiQedHzUZJhxtA2I2g-QAx_OPpsqpBTSUmrJuyeO-oGJGLo") %>%
       addTiles(url=glue(titiler_url)) %>%
@@ -40,7 +38,7 @@ server <- function(input, output) {
   
   output$map <- renderLeaflet({
     m <- current_map()
-    m$dependencies <- c(m$dependencies, leafpm::pmDependencies())
+    m$dependencies <- c(m$dependencies, pmDependencies())
     m %>%
       addPmToolbar(targetGroup = "edits")
   })
@@ -49,7 +47,7 @@ server <- function(input, output) {
     cur_ids <- lakes %>%
       filter(Sub_Basin %in% input$basin) %>%
       pull(GL_ID)
-    updateSelectInput("gl_id", choices = cur_ids)
+    updateSelectInput(session, "gl_id", choices = cur_ids, selected = cur_ids[1])
   })
 }
 

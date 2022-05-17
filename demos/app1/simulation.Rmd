@@ -4,17 +4,20 @@ output: html_notebook
 ---
 
 ```{r}
-library(tidyverse)
-library(gganimate)
 library(ambient)
+library(gganimate)
+library(sf)
+library(terra)
+library(tidyverse)
 ```
 
 
 ```{r}
-x <- list(noise_simplex(c(100, 100)))
-for (i in 2:500) {
-  noises <- rerun(2, noise_simplex(c(100, 100)))
-  x[[i]] <- billow(x[[i - 1]], noises[[1]], 2, octave = 2) + noises[[2]]
+x <- list(noise_simplex(c(200, 200)))
+for (i in 2:100) {
+  noises <- rerun(2, noise_simplex(c(200, 200)))
+  x[[i]] <- billow(x[[i - 1]], noises[[1]], .1, octave = 1)
+  x[[i]] <- normalize(x[[i]] + 0.1 * noises[[2]])
 }
 ```
 
@@ -28,16 +31,42 @@ to_long <- function(x) {
     mutate(name = as.integer(str_remove(name, "V")))
 }
 
-x <- map_dfr(x, to_long, .id = "time") %>%
+x_df <- map_dfr(x, to_long, .id = "time") %>%
   mutate(time = as.integer(time))
 
 ```
 
 ```{r, fig.height = 10, fig.width = 10}
-ggplot(x %>% filter(time < 7)) +
-  geom_tile(aes(id, name, fill = value, color = value)) + 
-  scale_fill_viridis_c() +
-  scale_color_viridis_c() +
-  transition_time(time)
+# ggplot(x_df) +
+#   geom_tile(aes(id, name, fill = value, color = value)) + 
+#   scale_fill_viridis_c() +
+#   scale_color_viridis_c() +
+#   transition_time(time)
 ```
 
+```{r}
+x_df %>%
+  filter(time == 11) %>%
+  mutate(value = value > .6) %>%
+  ggplot() +
+  geom_tile(aes(id, name, fill = value, color = value)) + 
+  scale_fill_viridis_d() +
+  scale_color_viridis_d()
+```
+
+```{r}
+x_polys <- map(x, ~ { 
+  rast(. > 0.8) %>% 
+    as.polygons()
+})
+
+for (i in seq_len(10)) {
+  plot(x_polys[[i]]) 
+}
+```
+
+```{r}
+for (i in 1:100) {
+  write_sf(st_as_sf(x_polys[[i]]), dsn = glue::glue("~/Downloads/shp_{i}.geojson"))
+}
+```

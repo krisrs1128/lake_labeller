@@ -1,0 +1,43 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(gganimate)
+library(ambient)
+```
+
+
+```{r}
+x <- list(noise_simplex(c(100, 100)))
+for (i in 2:500) {
+  noises <- rerun(2, noise_simplex(c(100, 100)))
+  x[[i]] <- billow(x[[i - 1]], noises[[1]], 2, octave = 2) + noises[[2]]
+}
+```
+
+
+```{r}
+to_long <- function(x) {
+  normalize(x) %>%
+    as.data.frame() %>%
+    mutate(id = row_number()) %>%
+    pivot_longer(-id) %>%
+    mutate(name = as.integer(str_remove(name, "V")))
+}
+
+x <- map_dfr(x, to_long, .id = "time") %>%
+  mutate(time = as.integer(time))
+
+```
+
+```{r, fig.height = 10, fig.width = 10}
+ggplot(x %>% filter(time < 7)) +
+  geom_tile(aes(id, name, fill = value, color = value)) + 
+  scale_fill_viridis_c() +
+  scale_color_viridis_c() +
+  transition_time(time)
+```
+

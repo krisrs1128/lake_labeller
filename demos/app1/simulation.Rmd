@@ -57,16 +57,20 @@ x_df %>%
 ```{r}
 x_polys <- map(x, ~ { 
   rast(. > 0.8) %>% 
-    as.polygons()
+    as.polygons() %>%
+    st_as_sf() %>%
+    filter(lyr.1 == 1)
 })
 
+x_polys <- x_polys[-1]
 for (i in seq_len(10)) {
   plot(x_polys[[i]]) 
 }
 ```
 
+
 ```{r}
-for (i in 1:100) {
-  write_sf(st_as_sf(x_polys[[i]]), dsn = glue::glue("~/Downloads/shp_{i}.geojson"))
+for (i in 1:99) {
+  write_sf(x_polys[[i]], dsn = glue::glue("~/Downloads/shp_{i}.geojson"))
 }
 ```

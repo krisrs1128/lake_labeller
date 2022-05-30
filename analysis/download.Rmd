@@ -132,3 +132,9 @@ plotRGB(result, 3, 4, 5, stretch = "lin")
 plotRGB(result, 11, 12, 13, stretch = "lin")
 ```
 
+```{r}
+crs(result) <- "epsg:32645"
+ext(result) <- ext(bbox[1], bbox[3], bbox[2], bbox[4])
+terra::writeRaster(result, "~/Downloads/test.tif", overwrite = TRUE)
+```
+

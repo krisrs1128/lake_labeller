@@ -4,137 +4,54 @@ output: html_notebook
 params:
   year: 2019
   month: 8
+  n_months: 4
+  lake_ids: [1, 10]
+  
 ---
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 
 ```{r}
-library(rstac)
-library(magrittr)
-library(terra)
-library(stars)
-library(tidyverse)
-library(sf)
+library(glue)
+library(lakes)
 library(lubridate)
-```
-
-
-```{r}
-scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
-  items <- stac("https://planetarycomputer.microsoft.com/api/stac/v1/") %>%
-      stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range) %>%
-      get_request() %>%
-      items_sign(sign_fn = sign_planetary_computer())
-  
-  # compile item properties into data.frame
-  properties <- map_dfr(
-    items$features, 
-    ~ data.frame(
-      id = .$id, p = .$properties, 
-      lng_left = .$bbox[1], lng_right = .$bbox[3], 
-      lat_lower = .$bbox[2], lat_upper = .$bbox[4])
-    )
-  
-  # gather links into data.frame
-  map(
-    items$features,
-    ~ map_dfr(.$assets, ~ data.frame(band_name = .$title, link = .$href), .id = "band")
-  ) %>%
-    set_names(properties$id) %>%
-    bind_rows(.id = "id") %>%
-    left_join(properties) %>%
-    filter(
-      p.s2.nodata_pixel_percentage < max_nodata, 
-      p.eo.cloud_cover < max_cloud,
-      band %in% c("AOT", str_c("B", str_pad(1:12, 0, side = "left", width = 2)), "B8A", "SCL", "WVP")
-    )
-}
-```
-
-
-```{r}
-
-download_scene <- function(links, band_names, bbox) {
-  scenes <- list()
-  for (i in seq_along(links)) {
-    print(glue::glue("band ", i))
-    scenes[[band_names[[i]]]] <- read_stars(links[i], proxy = TRUE) %>%
-      st_crop(bbox)
-  }
-  
-  do.call(c, scenes)
-}
-
-
-```
-
-
-
-```{r}
-start_date <- ymd(str_c(params$year, "-", params$month, "-01"))
-end_date <- start_date %m+% months(4)
-date_range <- paste(c(start_date, end_date), collapse = "/")
-lakes <- read_sf("../data/GL_3basins_2015.shp") %>%
-  filter(Area > 0.1)
-links <- scenes_metadata(date_range, st_bbox(lakes[1, ]))
-```
-
-
-```{r}
-cur_links <- links %>%
-  filter(id == links$id[1])
-lakes_proj <- st_transform(lakes, st_crs("epsg:32645"))
-bbox <- st_bbox(st_buffer(lakes_proj[1, ]$geometry, 100))
-```
-```{r}
 library(reticulate)
+library(sf)
+library(terra)
+library(tidyverse)
 use_condaenv("lakes_labeller")
 ```
 
-```{python}
-from scipy import interpolate
-import numpy as np
-import rasterio
-import rasterio.windows as windows
 
-def read_windows(links, bbox):
-  result = []
-  for link in links:
-    im = rasterio.open(link)
-    window = windows.from_bounds(*bbox, transform=im.meta["transform"])
-    result.append(im.read(window=window)[0,:, :])
-    
-  return interpolate_arrays(result)
+```{r}
+data(lakes)
+start_date <- ymd(str_c(params$year, "-", params$month, "-01"))
+end_date <- start_date %m+% months(params$n_months)
+date_range <- paste(c(start_date, end_date), collapse = "/")
+lakes_proj <- st_transform(lakes, st_crs("epsg:32645"))
+```
 
-def interpolate_arrays(arrays):
-  interpolators = []
-  for a in arrays:
-    y = np.linspace(0, 1, num=a.shape[0])
-    x = np.linspace(0, 1, num=a.shape[1])
-    interpolators.append(interpolate.interp2d(x, y, a))
+
+```{r}
+cur_lake <- lakes %>%
+  filter(row_number() %in% seq(params$lake_ids[1], params$lake_ids[2]))
+
+links <- list()
+for (gl_id in cur_lake$GL_ID) {
+  cur_lake <- filter(lakes, GL_ID == gl_id)
+  links[[gl_id]] <- scenes_metadata(date_range, st_bbox(cur_lake))
+  cur_lake <- st_transform(cur_lake, st_crs("epsg:32645"))
   
-  max_y = max([x.shape[0] for x in arrays])
-  max_x = max([x.shape[1] for x in arrays])
-  xx, yy = np.linspace(0, 1, num=max_x), np.linspace(0, 1, num=max_y)
-  result = []
-  for i, a in enumerate(arrays):
-    result.append(interpolators[i](xx, yy))
-    
-  return np.stack(result, axis=2)
-```
+  timepoints <- unique(links[[gl_id]]$id)
+  for (i in seq_along(timepoints)) {
+    out_path <- glue("{gl_id}_{params$year}_{params$month}-{i}.tif")
+    cur_links <- filter(links[[gl_id]], id == timepoints[i])
+    bbox <- st_bbox(st_buffer(cur_lake, 1e3))
+    read_windows(cur_links$link, bbox) %>%
+      writeRaster(out_path, overwrite = TRUE)
+  }
+}
 
-
-```{r}
-result <- py$read_windows(cur_links$link[1:15], bbox) %>%
-  rast()
-plotRGB(result, 3, 4, 5, stretch = "lin")
-plotRGB(result, 11, 12, 13, stretch = "lin")
-```
-
-```{r}
-crs(result) <- "epsg:32645"
-ext(result) <- ext(bbox[1], bbox[3], bbox[2], bbox[4])
-terra::writeRaster(result, "~/Downloads/test.tif", overwrite = TRUE)
 ```
 

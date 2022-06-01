@@ -2,7 +2,7 @@
 title: "Download Sentinel 2 Imagery"
 output: html_notebook
 params:
-  download_set: 1
+  download_set: 360
 ---
 
 ```{r, echo = FALSE}
@@ -28,7 +28,7 @@ lakes <- filter(lakes, Area > 0.1)
 
 ```{r}
 subsets <- expand.grid(
-  year = 2015:2022,
+  year = 2015:2021,
   month = seq(1, 12, by = 4),
   n_months = 4,
   GL_ID = lakes$GL_ID
@@ -48,17 +48,19 @@ for (i in seq_len(nrow(subsets))) {
   end_date <- start_date %m+% months(subsets$n_months[i])
   date_range <- paste(c(start_date, end_date), collapse = "/")
   
-  # get metadata for the current lake
+  # get metadata for the current lake (if there are any items returned)
   cur_lake <- filter(lakes, GL_ID == gl_id)
-  links[[gl_id]] <- scenes_metadata(date_range, st_bbox(cur_lake)) %>%
+  candidates <- scenes_metadata(date_range, st_bbox(cur_lake))
+  if (length(candidates) == 0 && nrow(candidates) > 0) next
+  links[[gl_id]] <- candidates %>%
     mutate(date = date(as_datetime(p.datetime)))
   cur_lake <- st_transform(cur_lake, st_crs("epsg:32645"))
   
   # download all timepoints for this lake
   timepoints <- unique(links[[gl_id]]$id)
-  for (timepoint in seq_along(timepoints)) {
+  for (j in seq_along(timepoints)) {
     out_path <- glue("{gl_id}_{links[[gl_id]]$date[1]}.tif")
-    cur_links <- filter(links[[gl_id]], id == timepoint)
+    cur_links <- filter(links[[gl_id]], id == timepoints[j])
     bbox <- st_bbox(st_buffer(cur_lake, 1e3))
     read_windows(cur_links$link, bbox) %>%
       writeRaster(out_path, overwrite = TRUE)
@@ -69,8 +71,5 @@ for (i in seq_len(nrow(subsets))) {
 ```{r}
 bind_rows(links, .id = "GL_ID") %>%
   write_csv(glue("metadata_{params$year}_{params$month}_{params$lake_ids[1]}-{params$lake_ids[2]}.csv"))
-```
-
-```{r}
 ```
 

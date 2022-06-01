@@ -12,6 +12,10 @@ scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
       get_request() %>%
       items_sign(sign_fn = sign_planetary_computer())
 
+  if (length(items$features) == 0) {
+    return (list())
+  }
+
   # compile item properties into data.frame
   properties <- map_dfr(
     items$features,

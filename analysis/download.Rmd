@@ -2,12 +2,9 @@
 title: "Download Sentinel 2 Imagery"
 output: html_notebook
 params:
-  year: 2019
-  month: 8
-  n_months: 4
-  lake_ids: [1, 10]
-  
+  download_set: 1
 ---
+
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
@@ -26,40 +23,54 @@ use_condaenv("lakes_labeller")
 
 ```{r}
 data(lakes)
-start_date <- ymd(str_c(params$year, "-", params$month, "-01"))
-end_date <- start_date %m+% months(params$n_months)
-date_range <- paste(c(start_date, end_date), collapse = "/")
-lakes_proj <- st_transform(lakes, st_crs("epsg:32645"))
+lakes <- filter(lakes, Area > 0.1)
+```
+
+```{r}
+subsets <- expand.grid(
+  year = 2015:2022,
+  month = seq(1, 12, by = 4),
+  n_months = 4,
+  GL_ID = lakes$GL_ID
+) %>%
+  arrange(year, month) %>%
+  mutate(download_set = rep(row_number(), each = 20, length.out = n())) %>%
+  filter(download_set == params$download_set)
 ```
 
 
 ```{r}
-cur_lake <- lakes %>%
-  filter(row_number() %in% seq(params$lake_ids[1], params$lake_ids[2]))
-
 links <- list()
-for (gl_id in cur_lake$GL_ID) {
+for (i in seq_len(nrow(subsets))) {
+  # extract query parameters for current row of subsets
+  gl_id <- subsets$GL_ID[i]
+  start_date <- ymd(str_c(subsets$year[i], "-", subsets$month[i], "-01"))
+  end_date <- start_date %m+% months(subsets$n_months[i])
+  date_range <- paste(c(start_date, end_date), collapse = "/")
+  
+  # get metadata for the current lake
   cur_lake <- filter(lakes, GL_ID == gl_id)
   links[[gl_id]] <- scenes_metadata(date_range, st_bbox(cur_lake)) %>%
-    mutate(
-      p.datetime = as_datetime(p.datetime),
-      date = date(p.datetime)
-    )
+    mutate(date = date(as_datetime(p.datetime)))
   cur_lake <- st_transform(cur_lake, st_crs("epsg:32645"))
   
+  # download all timepoints for this lake
   timepoints <- unique(links[[gl_id]]$id)
-  for (i in seq_along(timepoints)) {
+  for (timepoint in seq_along(timepoints)) {
     out_path <- glue("{gl_id}_{links[[gl_id]]$date[1]}.tif")
-    cur_links <- filter(links[[gl_id]], id == timepoints[i])
+    cur_links <- filter(links[[gl_id]], id == timepoint)
     bbox <- st_bbox(st_buffer(cur_lake, 1e3))
     read_windows(cur_links$link, bbox) %>%
       writeRaster(out_path, overwrite = TRUE)
   }
 }
-
 ```
+
 ```{r}
 bind_rows(links, .id = "GL_ID") %>%
   write_csv(glue("metadata_{params$year}_{params$month}_{params$lake_ids[1]}-{params$lake_ids[2]}.csv"))
+```
+
+```{r}
 ```
 

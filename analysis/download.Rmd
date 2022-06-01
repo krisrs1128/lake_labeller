@@ -40,12 +40,16 @@ cur_lake <- lakes %>%
 links <- list()
 for (gl_id in cur_lake$GL_ID) {
   cur_lake <- filter(lakes, GL_ID == gl_id)
-  links[[gl_id]] <- scenes_metadata(date_range, st_bbox(cur_lake))
+  links[[gl_id]] <- scenes_metadata(date_range, st_bbox(cur_lake)) %>%
+    mutate(
+      p.datetime = as_datetime(p.datetime),
+      date = date(p.datetime)
+    )
   cur_lake <- st_transform(cur_lake, st_crs("epsg:32645"))
   
   timepoints <- unique(links[[gl_id]]$id)
   for (i in seq_along(timepoints)) {
-    out_path <- glue("{gl_id}_{params$year}_{params$month}-{i}.tif")
+    out_path <- glue("{gl_id}_{links[[gl_id]]$date[1]}.tif")
     cur_links <- filter(links[[gl_id]], id == timepoints[i])
     bbox <- st_bbox(st_buffer(cur_lake, 1e3))
     read_windows(cur_links$link, bbox) %>%
@@ -53,5 +57,9 @@ for (gl_id in cur_lake$GL_ID) {
   }
 }
 
+```
+```{r}
+bind_rows(links, .id = "GL_ID") %>%
+  write_csv(glue("metadata_{params$year}_{params$month}_{params$lake_ids[1]}-{params$lake_ids[2]}.csv"))
 ```
 

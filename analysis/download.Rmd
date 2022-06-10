@@ -12,20 +12,14 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```{r}
 library(glue)
 library(rstac)
-#library(lakes)
-source("~/Desktop/glaciers/lake_labeller/lakes/R/download.R")
+library(lakes)
 library(lubridate)
 library(reticulate)
 library(sf)
-library(terra)
 library(tidyverse)
+library(terra)
 use_condaenv("lakes_labeller")
-source_python("~/Desktop/glaciers/lake_labeller/lakes/inst/extdata/download.py")
-```
-
-
-```{r}
-lakes <- read_sf("~/Desktop/glaciers/lake_labeller/data/raw_data/data/Glacier_2010.shp")
+data(glaciers)
 ```
 
 ```{r}
@@ -33,54 +27,43 @@ subsets <- expand.grid(
   year = 2021,
   month = seq(1, 12, by = 4),
   n_months = 4,
-  GLIMS_ID = lakes$GLIMS_ID
+  GLIMS_ID = as.character(glaciers$GLIMS_ID)
 ) %>%
   arrange(year, month) %>%
   mutate(download_set = rep(row_number(), each = 20, length.out = n())) %>%
   filter(download_set == params$download_set)
 ```
 
-
-
-```{python}
-
-test = read_windows(["https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/44/R/QS/2021/08/28/S2A_MSIL2A_20210828T045701_N0300_R119_T44RQS_20210828T133747.SAFE/GRANULE/L2A_T44RQS_A032291_20210828T050223/IMG_DATA/R10m/T44RQS_20210828T045701_WVP_10m.tif?st=2022-06-09T23%3A10%3A46Z&se=2022-06-10T23%3A55%3A46Z&sp=rl&sv=2020-06-12&sr=c&skoid=c85c15d6-d1ae-42d4-af60-e2ca0f81359b&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2022-06-10T19%3A59%3A07Z&ske=2022-06-17T19%3A59%3A07Z&sks=b&skv=2020-06-12&sig=%2BXM6wTaIUCFXomm45E9ivrMmRmiDsKWIZY2fHA6Untg%3D", "https://sentinel2l2a01.blob.core.windows.net/sentinel2-l2/44/R/QS/2021/08/28/S2A_MSIL2A_20210828T045701_N0300_R119_T44RQS_20210828T133747.SAFE/GRANULE/L2A_T44RQS_A032291_20210828T050223/IMG_DATA/R20m/T44RQS_20210828T045701_SCL_20m.tif?st=2022-06-09T23%3A10%3A46Z&se=2022-06-10T23%3A55%3A46Z&sp=rl&sv=2020-06-12&sr=c&skoid=c85c15d6-d1ae-42d4-af60-e2ca0f81359b&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2022-06-10T19%3A59%3A07Z&ske=2022-06-17T19%3A59%3A07Z&sks=b&skv=2020-06-12&sig=%2BXM6wTaIUCFXomm45E9ivrMmRmiDsKWIZY2fHA6Untg%3D"], (83.34771, 28.68907, 83.38244, 28.72825))
-
-test.shape
-```
-
-
 ```{r}
 links <- list()
 for (i in seq_len(nrow(subsets))) {
   # extract query parameters for current row of subsets
   gl_id <- subsets$GLIMS_ID[i]
-  print(gl_id)
   start_date <- ymd(str_c(subsets$year[i], "-", subsets$month[i], "-01"))
   end_date <- start_date %m+% months(subsets$n_months[i])
   date_range <- paste(c(start_date, end_date), collapse = "/")
   
-  # get metadata for the current lake (if there are any items returned)
-  cur_lake <- filter(lakes, GLIMS_ID == gl_id)
-  candidates <- scenes_metadata(date_range, st_bbox(cur_lake), max_cloud = 20)
+  # get metadata for the current glacier (if there are any items returned)
+  cur_glacier <- filter(glaciers, GLIMS_ID == gl_id)
+  candidates <- scenes_metadata(date_range, st_bbox(cur_glacier), max_cloud = 20)
   if (length(candidates) == 0) next
   links[[gl_id]] <- candidates %>%
     mutate(date = date(as_datetime(p.datetime)))
   
-  # download all timepoints for this lake
+  # download all timepoints for this glacier
   timepoints <- unique(links[[gl_id]]$id)
   for (j in seq_along(timepoints)) {
     out_path <- glue("{gl_id}_{links[[gl_id]]$date[1]}.tif")
     cur_links <- filter(links[[gl_id]], id == timepoints[j])
-    bbox <- st_bbox(st_buffer(cur_lake, 0.1))
+    bbox <- st_bbox(st_buffer(cur_glacier, 0.1))
     result <- read_windows(cur_links$link, bbox)
     
     if (length(result) > 0) {
       extent <- ext(bbox[1], bbox[3], bbox[2], bbox[4])
-      result <- rast(result, crs="EPSG:4326", extent=extent)
       writeRaster(result, out_path, overwrite = TRUE)
     }
   }
+  Sys.sleep(2)
 }
 ```
 
@@ -88,3 +71,5 @@ for (i in seq_len(nrow(subsets))) {
 bind_rows(links, .id = "GL_ID") %>%
   write_csv(glue("metadata_{params$download_set}.csv"))
 ```
+
+   #   rast(result, crs="EPSG:4326", extent=extent) %>%

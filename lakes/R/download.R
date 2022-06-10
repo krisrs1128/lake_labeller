@@ -43,15 +43,15 @@ scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
 #' @importFrom terra rast crs ext
 #' @importFrom reticulate source_python
 #' @export
-read_windows <- function(links, bbox, epsg = "epsg:32645") {
+read_windows <- function(links, bbox, epsg = "epsg:4326") {
   source_python(system.file("extdata/download.py", package = "lakes"))
-  result <- rast(py$read_windows(links, bbox))
-  print(result)
+  result <- py$read_windows(links, bbox)
   if (length(result) == 0) {
     warning("skipping")
     return (list())
   }
 
+  result <- rast(result)
   crs(result) <- epsg
   ext(result) <- ext(bbox[1], bbox[3], bbox[2], bbox[4])
   result

@@ -8,7 +8,7 @@
 #' @export
 scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
   items <- stac("https://planetarycomputer.microsoft.com/api/stac/v1/") %>%
-      stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range) %>%
+      stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range, limit = 100) %>%
       get_request() %>%
       items_sign(sign_fn = sign_planetary_computer())
 
@@ -46,6 +46,11 @@ scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
 read_windows <- function(links, bbox, epsg = "epsg:32645") {
   source_python(system.file("extdata/download.py", package = "lakes"))
   result <- rast(py$read_windows(links, bbox))
+  print(result)
+  if (length(result) == 0) {
+    warning("skipping")
+    return (list())
+  }
 
   crs(result) <- epsg
   ext(result) <- ext(bbox[1], bbox[3], bbox[2], bbox[4])

@@ -7,5 +7,5 @@
 scenes_metadata(date_range, bbox, max_nodata = 20, max_cloud = 20)
 }
 \description{
-https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a
+Downloads metadata
 }

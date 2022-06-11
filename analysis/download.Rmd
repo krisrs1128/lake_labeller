@@ -2,7 +2,7 @@
 title: "Download Sentinel 2 Imagery"
 output: html_notebook
 params:
-  download_set: 360
+  download_set: 1
 ---
 
 ```{r, echo = FALSE}
@@ -55,7 +55,7 @@ for (i in seq_len(nrow(subsets))) {
   for (j in seq_along(timepoints)) {
     out_path <- glue("{gl_id}_{links[[gl_id]]$date[1]}.tif")
     cur_links <- filter(links[[gl_id]], id == timepoints[j])
-    bbox <- st_bbox(st_buffer(cur_glacier, 0.1))
+    bbox <- st_bbox(st_buffer(cur_glacier, 0.5))
     result <- read_windows(cur_links$link, bbox)
     
     if (length(result) > 0) {
@@ -63,7 +63,7 @@ for (i in seq_len(nrow(subsets))) {
       writeRaster(result, out_path, overwrite = TRUE)
     }
   }
-  Sys.sleep(2)
+  Sys.sleep(5)
 }
 ```
 

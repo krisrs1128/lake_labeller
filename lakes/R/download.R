@@ -1,24 +1,39 @@
-#' Downloads metadata
-#'
+
+#' Search Sentinel API
 #' https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a
 #' @importFrom rstac stac stac_search get_request sign_planetary_computer
 #'  items_sign
+#' @importFrom magrittr %>%
+#' @export
+search_sentinel <- function(bbox, date_range) {
+  stac("https://planetarycomputer.microsoft.com/api/stac/v1/") %>%
+    stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range, limit = 1e3) %>%
+    get_request() %>%
+    items_sign(sign_fn = sign_planetary_computer())
+}
+
+#' Downloads metadata
+#'
 #' @importFrom purrr map_dfr map
 #' @importFrom dplyr bind_rows left_join filter
 #' @export
 scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
-  items <- stac("https://planetarycomputer.microsoft.com/api/stac/v1/") %>%
-      stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range, limit = 100) %>%
-      get_request() %>%
-      items_sign(sign_fn = sign_planetary_computer())
+  scenes <- NULL
+  attempt <- 1
+  while(is.null(scenes) && attempt <= 5) {
+    attempt <- attempt + 1
+    try(scenes <- search_sentinel(bbox, date_range))
+    Sys.sleep(2)
+  } 
 
-  if (length(items$features) == 0) {
+  if (is.null(scenes) || length(scenes$features) == 0) {
+    warning("Item search returned no scenes.")
     return (list())
   }
 
-  # compile item properties into data.frame
+  # compile scene properties into data.frame
   properties <- map_dfr(
-    items$features,
+    scenes$features,
     ~ data.frame(
       id = .$id, p = .$properties,
       lng_left = .$bbox[1], lng_right = .$bbox[3],
@@ -27,12 +42,12 @@ scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
 
   # gather links into data.frame
   map(
-    items$features,
+    scenes$features,
     ~ map_dfr(.$assets, ~ data.frame(band_name = .$title, link = .$href), .id = "band")
   ) %>%
     set_names(properties$id) %>%
     bind_rows(.id = "id") %>%
-    left_join(properties) %>%
+    left_join(properties, by = "id") %>%
     filter(
       p.s2.nodata_pixel_percentage < max_nodata,
       p.eo.cloud_cover < max_cloud,

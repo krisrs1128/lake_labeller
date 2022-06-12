@@ -5,10 +5,11 @@
 #'  items_sign
 #' @importFrom magrittr %>%
 #' @export
-search_sentinel <- function(bbox, date_range) {
+search_sentinel <- function(bbox, date_range, max_nodata = 20, max_cloud = 50) {
   stac("https://planetarycomputer.microsoft.com/api/stac/v1/") %>%
     stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range, limit = 1e3) %>%
-    get_request() %>%
+    ext_query("eo:cloud_cover" < max_cloud) %>% #, "s2:nodata_pixel_percentage" < max_nodata) %>%
+    post_request() %>%
     items_sign(sign_fn = sign_planetary_computer())
 }
 
@@ -17,12 +18,12 @@ search_sentinel <- function(bbox, date_range) {
 #' @importFrom purrr map_dfr map
 #' @importFrom dplyr bind_rows left_join filter
 #' @export
-scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
+scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 50) {
   scenes <- NULL
   attempt <- 1
   while(is.null(scenes) && attempt <= 5) {
     attempt <- attempt + 1
-    try(scenes <- search_sentinel(bbox, date_range))
+    try(scenes <- search_sentinel(bbox, date_range, max_nodata, max_cloud))
     Sys.sleep(2)
   } 
 
@@ -49,8 +50,6 @@ scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 20) {
     bind_rows(.id = "id") %>%
     left_join(properties, by = "id") %>%
     filter(
-      p.s2.nodata_pixel_percentage < max_nodata,
-      p.eo.cloud_cover < max_cloud,
       band %in% c(str_c("B", str_pad(1:12, 0, side = "left", width = 2)), "B8A", "SCL", "WVP")
     )
 }
@@ -62,7 +61,7 @@ read_windows <- function(links, bbox, epsg = "epsg:4326") {
   source_python(system.file("extdata/download.py", package = "lakes"))
   result <- py$read_windows(links, bbox)
   if (length(result) == 0) {
-    warning("skipping")
+    warning("skipping, since empty window returned.")
     return (list())
   }
 

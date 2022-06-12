@@ -20,6 +20,7 @@ def read_windows(links, bbox):
     window = windows.from_bounds(*bbox_tuple, transform=im.meta["transform"])
     result.append(im.read(window=window)[0])
 
+  print([r.shape for r in result])
   if any([min(r.shape) < 20 for r in result]):
     return []
   return interpolate_arrays(result)

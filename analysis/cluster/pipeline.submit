@@ -1,11 +1,11 @@
 universe = docker
 docker_image = krisrs1128/lakes
-log = /home/ksankaran/logs/lakes-$(Process).log
-error = /home/ksankaran/logs/lakes-$(Process).err
-output = /home/ksankaran/logs/lakes-$(Process).out
+log = /home/ksankaran/logs/icimod-$(Process).log
+error = /home/ksankaran/logs/icimod-$(Process).err
+output = /home/ksankaran/logs/icimod-$(Process).out
 executable = download.sh
 environment = "id=$(Process)"
 request_cpus = 1
-request_memory = 4GB
+request_memory = 10GB
 request_disk = 50GB
-queue 10
+queue 3

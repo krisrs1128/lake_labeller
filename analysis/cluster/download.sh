@@ -2,11 +2,8 @@
 
 git clone https://github.com/krisrs1128/lake_labeller
 cd lake_labeller/analysis
-
-start
-Rscript -e "rmarkdown::render('donwload.Rmd', params = list(year = 2019, month = 8, n_months = 4))"
-
-year: 2019
-month: 8
-n_months: 4
-lake_ids: [1, 10]
+Rscript -e "rmarkdown::render('download.Rmd', params = list(download_set = $id))"
+cd ../
+mkdir data_${id}
+mv analysis/*.tif data_${id}
+tar -zcvf data_${id}.tar.gz data_${id}

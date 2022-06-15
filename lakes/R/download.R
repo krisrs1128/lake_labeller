@@ -25,7 +25,7 @@ scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 50) {
     attempt <- attempt + 1
     try(scenes <- search_sentinel(bbox, date_range, max_nodata, max_cloud))
     Sys.sleep(2)
-  } 
+  }
 
   if (is.null(scenes) || length(scenes$features) == 0) {
     warning("Item search returned no scenes.")

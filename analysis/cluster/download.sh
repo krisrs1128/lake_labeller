@@ -6,4 +6,5 @@ Rscript -e "rmarkdown::render('download.Rmd', params = list(download_set = $id))
 cd ../
 mkdir data_${id}
 mv analysis/*.tif data_${id}
+mv analysis/*.csv data_${id}
 tar -zcvf data_${id}.tar.gz data_${id}

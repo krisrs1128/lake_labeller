@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+export id=$((id + 1))
 git clone https://github.com/krisrs1128/lake_labeller
 cd lake_labeller/analysis
 Rscript -e "devtools::install('../lakes')"

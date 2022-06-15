@@ -2,6 +2,7 @@
 
 git clone https://github.com/krisrs1128/lake_labeller
 cd lake_labeller/analysis
+Rscript -e "devtools::install('../lakes')"
 Rscript -e "rmarkdown::render('download.Rmd', params = list(download_set = $id))"
 cd ../
 mkdir data_${id}

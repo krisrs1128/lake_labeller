@@ -1,13 +1,11 @@
-FROM rocker/tidyverse:latest
+FROM rocker/tidyverse
 
-RUN apt update
-RUN apt-get install -y libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+RUN apt-get update
+RUN apt-get install -y libudunits2-dev gdal-bin libgdal-dev libgeos-dev libproj-dev python3.8-venv
 RUN Rscript -e "install.packages('reticulate')"
+RUN Rscript -e 'reticulate::install_miniconda()'
+RUN Rscript -e "reticulate::py_install(c('gdal==3.0.4', 'numpy', 'scipy', 'rasterio', 'pyproj', 'shapely'))"
 RUN Rscript -e "install.packages(c('sf', 'terra', 'lubridate', 'devtools'))"
 RUN Rscript -e "install.packages(c('fastkmedoids', 'glue', 'rstac', 'stars'))"
-RUN Rscript -e "devtools::install_github('krisrs1128/lake_labeller/lakes')"
 
-RUN Rscript -e "reticulate::install_miniconda()"
-RUN Rscript -e "reticulate::conda_create('lakes_labeller')"
-RUN Rscript -e "reticulate::conda_install('lakes_labeller', c('gdal', 'numpy', 'scipy', 'rasterio'))"
 RUN chmod -R 777 /usr/local/lib/

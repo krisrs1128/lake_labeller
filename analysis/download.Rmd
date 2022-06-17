@@ -19,7 +19,6 @@ library(rstac)
 library(sf)
 library(terra)
 library(tidyverse)
-use_condaenv("lakes_labeller")
 data(glaciers)
 ```
 
@@ -53,7 +52,7 @@ for (i in seq_len(nrow(subsets))) {
   start_date <- ymd(str_c(subsets$year[i], "-", subsets$month[i], "-01"))
   end_date <- start_date %m+% months(subsets$n_months[i])
   date_range <- paste(c(start_date, end_date), collapse = "/")
-  
+
   # get metadata for the current glacier (if there are any items returned)
   cur_glacier <- filter(glaciers, GLIMS_ID == gl_id)
   bbox <- st_bbox(cur_glacier)
@@ -61,7 +60,7 @@ for (i in seq_len(nrow(subsets))) {
   if (length(candidates) == 0) next
   links[[gl_id]] <- candidates %>%
     mutate(date = date(as_datetime(p.datetime)))
-  
+
   # download all timepoints for this glacier
   timepoints <- unique(links[[gl_id]]$id)
   for (j in seq_along(timepoints)) {
@@ -69,7 +68,7 @@ for (i in seq_len(nrow(subsets))) {
     cur_links <- filter(links[[gl_id]], id == timepoints[j])
     bbox <- st_bbox(st_buffer(cur_glacier, 1e4))
     result <- read_windows(cur_links$link, bbox)
-    
+
     if (length(result) > 0) {
       extent <- ext(bbox[1], bbox[3], bbox[2], bbox[4])
       writeRaster(result, out_path, overwrite = TRUE)

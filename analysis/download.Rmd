@@ -40,7 +40,7 @@ subsets <- expand.grid(
   GLIMS_ID = as.character(glaciers$GLIMS_ID[pam_result@medoids])
 ) %>%
   arrange(year, month) %>%
-  mutate(download_set = rep(row_number(), each = 5, length.out = n())) %>%
+  mutate(download_set = rep(row_number(), each = 20, length.out = n())) %>%
   filter(download_set == params$download_set)
 ```
 

@@ -5,6 +5,7 @@ error = /home/ksankaran/logs/icimod-$(Process).err
 output = /home/ksankaran/logs/icimod-$(Process).out
 executable = download.sh
 environment = "id=$(Process)"
+requirements = (Target.HasCHTCStaging == true)
 request_cpus = 1
 request_memory = 8GB
 request_disk = 12GB

@@ -34,13 +34,14 @@ pam_result <- glaciers %>%
 
 ```{r}
 subsets <- expand.grid(
-  year = 2020:2021,
+  year = 2018:2022,
   month = seq(1, 12, by = 4),
   n_months = 4,
   GLIMS_ID = as.character(glaciers$GLIMS_ID[pam_result@medoids])
 ) %>%
   arrange(year, month) %>%
   mutate(download_set = rep(row_number(), each = 20, length.out = n())) %>%
+  filter(!(year == 2022 & month > 4)) %>%
   filter(download_set == params$download_set)
 ```
 

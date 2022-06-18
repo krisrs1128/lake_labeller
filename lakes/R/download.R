@@ -5,10 +5,10 @@
 #'  items_sign
 #' @importFrom magrittr %>%
 #' @export
-search_sentinel <- function(bbox, date_range, max_nodata = 20, max_cloud = 50) {
+search_sentinel <- function(bbox, date_range, max_nodata = 20, max_cloud = 35) {
   stac("https://planetarycomputer.microsoft.com/api/stac/v1/") %>%
     stac_search(collections = "sentinel-2-l2a", bbox = bbox, datetime = date_range, limit = 1e3) %>%
-    ext_query("eo:cloud_cover" < max_cloud) %>% #, "s2:nodata_pixel_percentage" < max_nodata) %>%
+    ext_query("eo:cloud_cover" < max_cloud, "s2:nodata_pixel_percentage" < max_nodata) %>%
     post_request() %>%
     items_sign(sign_fn = sign_planetary_computer())
 }
@@ -18,7 +18,7 @@ search_sentinel <- function(bbox, date_range, max_nodata = 20, max_cloud = 50) {
 #' @importFrom purrr map_dfr map
 #' @importFrom dplyr bind_rows left_join filter
 #' @export
-scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 50) {
+scenes_metadata <- function(date_range, bbox, max_nodata = 20, max_cloud = 35) {
   scenes <- NULL
   attempt <- 1
   while(is.null(scenes) && attempt <= 5) {

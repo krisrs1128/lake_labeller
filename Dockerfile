@@ -9,3 +9,6 @@ RUN Rscript -e "install.packages(c('sf', 'terra', 'lubridate', 'devtools'))"
 RUN Rscript -e "install.packages(c('fastkmedoids', 'glue', 'rstac', 'stars'))"
 
 RUN chmod -R 777 /usr/local/lib/
+ENV HOME /root/
+ENV USER root
+RUN chmod -R 777 /root/

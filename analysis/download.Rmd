@@ -20,7 +20,6 @@ library(sf)
 library(terra)
 library(tidyverse)
 data(glaciers)
-use_condaenv("lakes_labeller")
 ```
 
 ```{r}

@@ -6,8 +6,8 @@ cd lake_labeller/analysis
 Rscript -e "devtools::install('../lakes')"
 Rscript -e "rmarkdown::render('download.Rmd', params = list(download_set = $id))"
 cd ../
-mkdir data_${id}
-mv analysis/*.tif data_${id}
-mv analysis/*.csv data_${id}
-tar -zcvf data_${id}.tar.gz data_${id}
+mkdir glaciers_${id}
+mv analysis/*.tif glaciers_${id}
+mv analysis/*.csv glaciers_${id}
+tar -zcvf glaciers_${id}.tar.gz glaciers_${id}
 mv *.tar.gz /staging/ksankaran/glaciers/

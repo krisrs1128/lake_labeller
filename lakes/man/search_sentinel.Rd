@@ -5,7 +5,7 @@
 \title{Search Sentinel API
 https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a}
 \usage{
-search_sentinel(bbox, date_range, max_nodata = 20, max_cloud = 50)
+search_sentinel(bbox, date_range, max_nodata = 20, max_cloud = 35)
 }
 \description{
 Search Sentinel API

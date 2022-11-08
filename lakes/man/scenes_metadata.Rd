@@ -4,7 +4,7 @@
 \alias{scenes_metadata}
 \title{Downloads metadata}
 \usage{
-scenes_metadata(date_range, bbox, max_nodata = 20, max_cloud = 50)
+scenes_metadata(date_range, bbox, max_nodata = 20, max_cloud = 35)
 }
 \description{
 Downloads metadata

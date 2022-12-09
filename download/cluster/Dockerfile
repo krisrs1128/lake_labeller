@@ -17,5 +17,5 @@ RUN conda install -c conda-forge -y mamba
 #RUN mamba install -c conda-forge -y geopandas pystac-client planetary-computer python-dotenv
 #RUN mamba install -c conda-forge -y numpy scipy
 RUN mamba install -c pytorch -c nvidia -y pytorch-cuda=11.6
-RUN mamba install -c pytorch -c nvidia -y pytorch=1.13 torchvision
+RUN mamba install -c pytorch -c nvidia -y pytorch torchvision
 RUN mamba install -c conda-forge -y torchgeo

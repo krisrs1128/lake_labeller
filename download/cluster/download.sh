@@ -1,2 +1,2 @@
 
-papermill ../single_scene.ipynb -p start_ix 0 -p end_ix 1
+python ../download_scenes.py -p start_ix 0 -p end_ix 1

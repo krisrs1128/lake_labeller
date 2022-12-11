@@ -1,3 +1,4 @@
 *.tar.gz
 *.ipynb_checkpoints
 *.tiff
+.DS_Store

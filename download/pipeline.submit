@@ -1,5 +1,5 @@
 universe = docker
-docker_image = krisrs1128/glaciers:20221208
+docker_image = krisrs1128/glaciers:20221210
 log = /home/ksankaran/logs/icimod-$(Process).log
 error = /home/ksankaran/logs/icimod-$(Process).err
 output = /home/ksankaran/logs/icimod-$(Process).out

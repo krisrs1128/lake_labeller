@@ -52,8 +52,8 @@ def search_catalog(bounds, date_range, constraints, collection="sentinel-2-l2a")
     )
     return catalog.search(
         collections=collection,
-        intersects=bounds,
-        datetime=date_range,
+        intersects=bounds, 
+        datetime=date_range, 
         query=constraints
     )
 
@@ -73,7 +73,7 @@ def download_items(search_results, channels, out_dir=".", max_items=1):
         print(f"Processing {item.id}")
         band_data = []
         for channel in channels:
-            with rasterio.open(item.assets[channel].href) as reader:
+             with rasterio.open(item.assets[channel].href) as reader:
                 band_data.append(reader.read()[0])
                 profile = update_profile(reader, len(channels))
 
@@ -93,6 +93,6 @@ def download_scene(scene, constraints, channels, collection="sentinel-2-l2a"):
     download_items(search_results, channels)
 
 
-def download_range(scenes, start_ix, end_ix, constraints, channels, collection="sentinel-2-l2aa"):
+def download_range(scenes, start_ix, end_ix, constraints, channels, collection="sentinel-2-l2a"):
     for ix in range(start_ix, end_ix):
         download_scene(scenes[ix], constraints, channels, collection)

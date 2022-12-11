@@ -10,4 +10,3 @@ RUN apt-get install -y gnupg \
   && apt-get install -y libgdal-dev gdal-bin
 
 RUN pip install --no-cache-dir rasterio geopandas torchvision pyproj shapely pystac-client planetary-computer python-dotenv torchgeo
-RUN planetarycomputer configure --subscription_key a47b295458434389804c72ed1596b300

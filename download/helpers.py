@@ -58,7 +58,7 @@ def search_catalog(bounds, date_range, constraints, collection="sentinel-2-l2a")
     )
 
 
-def download_items(search_results, channels, out_dir=".", max_items=1):
+def download_items(search_results, channels, out_dir=".", max_items=10):
     """
     Download Scenes
 

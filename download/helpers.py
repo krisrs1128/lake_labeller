@@ -105,7 +105,7 @@ def download_items(search_results, channels, bbox, out_dir=".", max_items=1, pre
 
 
 def download_scene(scene, constraints, channels, collection="sentinel-2-l2a", prefix="s2"):
-    point = Point(scene["lon"], scene["lat"]).buffer(0.2)
+    point = Point(scene["lon"], scene["lat"]).buffer(0.1)
     date_range = f"{scene['start']}/{scene['end']}"
     search_results = search_catalog(point, date_range, constraints, collection)
     download_items(search_results, channels, point.bounds, prefix=prefix)

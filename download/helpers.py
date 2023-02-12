@@ -67,7 +67,7 @@ def search_catalog(bounds, date_range, constraints, collection="sentinel-2-l2a")
     )
 
 
-def download_items(search_results, channels, out_dir=".", max_items=10):
+def download_items(search_results, channels, bbox, out_dir=".", max_items=1, prefix="s2"):
     """
     Download Scenes
 
@@ -88,31 +88,30 @@ def download_items(search_results, channels, out_dir=".", max_items=10):
                 cur_crs = pyproj.CRS(reader.meta["crs"])
                 project = pyproj.Transformer.from_crs(wgs84, cur_crs, always_xy=True).transform
                 bbox_ = transform(project, bbox)
-                print(box(*reader.bounds).contains(bbox_))
-                if not box(*reader.bounds).contains(bbox_):
-                    continue
 
-                window = windows.from_bounds(*bbox_.bounds, transform=reader.meta["transform"])
-                band_data.append(reader.read(window=window)[0])
-                profile = update_profile(reader, len(channels), window)
+                if box(*reader.bounds).contains(bbox_):
+                    window = windows.from_bounds(*bbox_.bounds, transform=reader.meta["transform"])
+                    band_data.append(reader.read(window=window)[0])
+                    profile = update_profile(reader, len(channels), window)
 
         if len(band_data) > 0:
             ix += 1
             dim0 = max([b.shape[0] for b in band_data])
             band_data = interpolation(band_data, dim0)
-            with rasterio.open(f"{out_dir}/{item.id}.tiff", "w", **profile) as writer:
+            with rasterio.open(f"{out_dir}/{prefix}-{ix}.tiff", "w", **profile) as writer:
                 writer.write(np.stack(band_data))
 
             if ix == max_items: break
 
 
-def download_scene(scene, constraints, channels, collection="sentinel-2-l2a"):
-    point = Point(scene["lon"], scene["lat"]).buffer(0.05)
+def download_scene(scene, constraints, channels, collection="sentinel-2-l2a", prefix="s2"):
+    point = Point(scene["lon"], scene["lat"]).buffer(0.1)
     date_range = f"{scene['start']}/{scene['end']}"
     search_results = search_catalog(point, date_range, constraints, collection)
-    download_items(search_results, channels, point.bounds)
+    download_items(search_results, channels, point.bounds, prefix=prefix)
 
 
-def download_range(scenes, start_ix, end_ix, constraints, channels, collection="sentinel-2-l2a"):
+def download_range(scenes, start_ix, end_ix, constraints, channels, 
+                   collection="sentinel-2-l2a", prefix="s2"):
     for ix in range(start_ix, end_ix):
-        download_scene(scenes[ix], constraints, channels, collection)
+        download_scene(scenes[ix], constraints, channels, collection, f"{prefix}-{ix}")

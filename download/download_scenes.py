@@ -16,4 +16,4 @@ download_range(scenes, args.start_ix, args.end_ix, constraints, channels)
 # download the corresponding SAR scenes
 constraints = {}
 channels = ['vv', 'vh'] # vertical and horizontal polarization
-download_range(scenes, args.start_ix, args.end_ix, constraints, channels, collection="sentinel-1-rtc")
+download_range(scenes, args.start_ix, args.end_ix, constraints, channels, "sentinel-1-rtc", "s1")

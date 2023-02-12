@@ -4,7 +4,11 @@ import geopandas as gpd
 import rasterio
 from rasterio import warp, windows, crs
 from scipy import interpolate
-from shapely.geometry import Point
+from shapely.geometry import Point, box
+from shapely.geometry.polygon import Polygon
+import pyproj
+import rasterio.windows as windows
+from shapely.ops import transform
 import numpy as np
 
 
@@ -27,7 +31,7 @@ def interpolation(arrays, dim0=5000):
     return np.stack(result)
 
 
-def update_profile(reader, count):
+def update_profile(reader, count, window):
     """
     Define profile for writing
 
@@ -35,7 +39,12 @@ def update_profile(reader, count):
     a profile to fit in the window subregion that we care to save.
     """
     profile = reader.profile
-    profile.update({ "count": count })
+    profile.update({ 
+        "count": count, 
+        "width": window.width,
+        "height": window.height,
+        "transform": windows.transform(window, reader.transform)
+    })
     return profile
 
 
@@ -58,7 +67,7 @@ def search_catalog(bounds, date_range, constraints, collection="sentinel-2-l2a")
     )
 
 
-def download_items(search_results, channels, out_dir=".", max_items=1):
+def download_items(search_results, channels, bbox, out_dir=".", max_items=1):
     """
     Download Scenes
 
@@ -68,29 +77,40 @@ def download_items(search_results, channels, out_dir=".", max_items=1):
     """
     items = search_results.item_collection()
     ix = 0
+    wgs84 = pyproj.CRS("EPSG:4326")
+    bbox = box(*bbox)
 
     for item in items:
         print(f"Processing {item.id}")
         band_data = []
         for channel in channels:
              with rasterio.open(item.assets[channel].href) as reader:
-                band_data.append(reader.read()[0])
-                profile = update_profile(reader, len(channels))
+                cur_crs = pyproj.CRS(reader.meta["crs"])
+                project = pyproj.Transformer.from_crs(wgs84, cur_crs, always_xy=True).transform
+                bbox_ = transform(project, bbox)
+                print(box(*reader.bounds).contains(bbox_))
+                if not box(*reader.bounds).contains(bbox_):
+                    continue
 
-        dim0 = max([b.shape[0] for b in band_data])
-        band_data = interpolation(band_data, dim0)
-        with rasterio.open(f"{out_dir}/{item.id}.tiff", "w", **profile) as writer:
-            writer.write(np.stack(band_data))
+                window = windows.from_bounds(*bbox_.bounds, transform=reader.meta["transform"])
+                band_data.append(reader.read(window=window)[0])
+                profile = update_profile(reader, len(channels), window)
 
-        ix += 1
-        if ix == max_items: break
+        if len(band_data) > 0:
+            ix += 1
+            dim0 = max([b.shape[0] for b in band_data])
+            band_data = interpolation(band_data, dim0)
+            with rasterio.open(f"{out_dir}/{item.id}.tiff", "w", **profile) as writer:
+                writer.write(np.stack(band_data))
+
+            if ix == max_items: break
 
 
 def download_scene(scene, constraints, channels, collection="sentinel-2-l2a"):
-    bounds = Point(scene["lon"], scene["lat"]).buffer(0.05)
+    point = Point(scene["lon"], scene["lat"]).buffer(0.05)
     date_range = f"{scene['start']}/{scene['end']}"
-    search_results = search_catalog(bounds, date_range, constraints, collection)
-    download_items(search_results, channels)
+    search_results = search_catalog(point, date_range, constraints, collection)
+    download_items(search_results, channels, point.bounds)
 
 
 def download_range(scenes, start_ix, end_ix, constraints, channels, collection="sentinel-2-l2a"):

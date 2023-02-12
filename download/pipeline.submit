@@ -8,6 +8,6 @@ environment = "id=$(Process)"
 transfer_input_files=download_scenes.py,helpers.py,scenes.json
 requirements = (Target.HasCHTCStaging == true)
 request_cpus = 1
-request_memory = 36GB
-request_disk = 20GB
-queue 12
+request_memory = 6GB
+request_disk = 5GB
+queue 20

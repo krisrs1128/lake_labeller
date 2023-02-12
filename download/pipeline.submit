@@ -1,12 +1,13 @@
 universe = docker
-docker_image = krisrs1128/glaciers:20221210
+docker_image = krisrs1128/glaciers:20221213
 log = /home/ksankaran/logs/icimod-$(Process).log
 error = /home/ksankaran/logs/icimod-$(Process).err
 output = /home/ksankaran/logs/icimod-$(Process).out
 executable = download.sh
 environment = "id=$(Process)"
+transfer_input_files=download_scenes.py,helpers.py,scenes.json
 requirements = (Target.HasCHTCStaging == true)
 request_cpus = 1
-request_memory = 8GB
+request_memory = 36GB
 request_disk = 20GB
-queue
+queue 12
